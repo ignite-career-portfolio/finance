@@ -12,6 +12,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { apiClient } from '@/lib/api-client';
 import { toast } from 'sonner';
 import { SavingsModal } from '@/components/savings/savings-modal';
@@ -34,6 +36,7 @@ export default function SavingsPage() {
   const [isContributionOpen, setIsContributionOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
   const [contributionAmount, setContributionAmount] = useState('');
+  const [recordAsTransaction, setRecordAsTransaction] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -80,20 +83,42 @@ export default function SavingsPage() {
     const additionalAmount = Math.round(parseFloat(contributionAmount) * 1000);
     const newTotal = selectedGoal.currentAmount + additionalAmount;
 
-    const response = await apiClient.patch(`/api/savings-goals/${selectedGoal.id}`, {
-      current_amount: newTotal,
-    });
+    try {
+      // 1. If dynamic transfer is enabled, record as a transaction first
+      if (recordAsTransaction) {
+        await apiClient.post('/api/transactions', {
+          type: 'expense',
+          description: `Goal Funding: ${selectedGoal.name}`,
+          category: 'other', // Or 'goal' if category exists
+          amount: additionalAmount,
+          transaction_date: new Date().toISOString().split('T')[0],
+        });
+      }
 
-    if (!response.error) {
-      toast.success(`Added ${formatCurrency(additionalAmount)} to ${selectedGoal.name}`);
-      setIsContributionOpen(false);
-      setContributionAmount('');
-      setSelectedGoal(null);
-      await fetchGoals();
-    } else {
-      toast.error('Failed to update progress');
+      // 2. Update the goal progress
+      const response = await apiClient.patch(`/api/savings-goals/${selectedGoal.id}`, {
+        current_amount: newTotal,
+      });
+
+      if (!response.error) {
+        toast.success(
+          recordAsTransaction
+            ? `Transferred ${formatCurrency(additionalAmount)} to ${selectedGoal.name} (Balance Updated)`
+            : `Added ${formatCurrency(additionalAmount)} to ${selectedGoal.name}`
+        );
+        setIsContributionOpen(false);
+        setContributionAmount('');
+        setRecordAsTransaction(false);
+        setSelectedGoal(null);
+        await fetchGoals();
+      } else {
+        toast.error('Failed to update progress');
+      }
+    } catch (error) {
+      toast.error('Dynamic update failed');
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleDeleteGoal = async (id: string) => {
@@ -262,6 +287,19 @@ export default function SavingsPage() {
               <p className="text-xs text-muted-foreground">
                 Current total: {selectedGoal ? formatCurrency(selectedGoal.currentAmount) : '0,000 DT'}
               </p>
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/10 gap-4">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-bold">Smart Transfer</Label>
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  Automatically decrease your main balance and record this as an expense transaction.
+                </p>
+              </div>
+              <Switch
+                checked={recordAsTransaction}
+                onCheckedChange={setRecordAsTransaction}
+              />
             </div>
           </div>
           <DialogFooter>

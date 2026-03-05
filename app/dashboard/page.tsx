@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { apiClient } from '@/lib/api-client';
@@ -205,7 +206,11 @@ export default function DashboardPage() {
             <h2 className="text-xl font-bold text-foreground mb-6">Budget Overview</h2>
             <div className="space-y-6">
               {budgetStatus.length > 0 ? budgetStatus.map((budget: any) => (
-                <div key={budget.category} className="space-y-2 group">
+                <Link
+                  href="/dashboard/budget"
+                  key={budget.category}
+                  className="block space-y-2 group cursor-pointer hover:bg-muted/30 p-2 -m-2 rounded-xl transition-all"
+                >
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{budget.category}</p>
                     <p className="text-sm font-medium text-muted-foreground table-tabular">
@@ -223,7 +228,7 @@ export default function DashboardPage() {
                       style={{ width: `${Math.min((budget.spent / budget.limit) * 100, 100)}%` }}
                     />
                   </div>
-                </div>
+                </Link>
               )) : (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
@@ -249,7 +254,6 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      <QuickActions />
     </div>
   );
 }

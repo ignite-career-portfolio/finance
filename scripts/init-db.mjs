@@ -102,6 +102,7 @@ async function initDB() {
         category VARCHAR(255) NOT NULL,
         budgeted_amount INTEGER NOT NULL,
         month_year VARCHAR(7) NOT NULL,
+        notes TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `;

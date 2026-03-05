@@ -8,7 +8,8 @@ interface Transaction {
   amount: number;
   category: string;
   type: 'income' | 'expense';
-  date: string;
+  date?: string;
+  transaction_date?: string;
 }
 
 interface RecentTransactionsProps {
@@ -18,8 +19,12 @@ interface RecentTransactionsProps {
 export function RecentTransactions({ transactions }: RecentTransactionsProps) {
 
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '—';
+
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     });
@@ -58,7 +63,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
             <div className="text-2xl">{getCategoryIcon(transaction.category)}</div>
             <div>
               <p className="text-sm font-medium text-foreground">{transaction.description}</p>
-              <p className="text-xs text-muted-foreground">{formatDate(transaction.date)}</p>
+              <p className="text-xs text-muted-foreground">{formatDate(transaction.transaction_date ?? transaction.date)}</p>
             </div>
           </div>
           <p

@@ -54,15 +54,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { category } = body;
+    const { category, notes } = body;
     // Frontend sends 'limit', DB column is 'budgeted_amount'
     const budgeted_amount = body.budgeted_amount ?? body.limit;
     // Auto-set current month_year if not provided
     const month_year = body.month_year ?? new Date().toISOString().slice(0, 7);
 
     const result = await sql`
-      INSERT INTO budget (user_id, category, budgeted_amount, month_year)
-      VALUES (${userId}, ${category}, ${budgeted_amount}, ${month_year})
+      INSERT INTO budget (user_id, category, budgeted_amount, month_year, notes)
+      VALUES (${userId}, ${category}, ${budgeted_amount}, ${month_year}, ${notes}::text)
       RETURNING *
     `;
 

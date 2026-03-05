@@ -5,6 +5,7 @@ import { useUser } from '@/lib/user-context';
 import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { TopNav } from '@/components/dashboard/top-nav';
+import { QuickActions } from '@/components/dashboard/quick-actions';
 
 export default function DashboardLayout({
   children,
@@ -46,11 +47,12 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <TopNav />
         <main className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/10">
-          <div className="container mx-auto px-4 sm:px-6 py-6 max-w-7xl">
+          <div className="container mx-auto px-4 sm:px-6 py-6 max-w-7xl relative">
             {children}
           </div>
         </main>
       </div>
+      <QuickActions />
     </div>
   );
 }

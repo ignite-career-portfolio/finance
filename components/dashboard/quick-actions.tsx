@@ -64,12 +64,23 @@ export function QuickActions() {
         <>
             <Dialog open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <DialogTrigger asChild>
-                    <Button
-                        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl z-40 hover:scale-110 transition-transform bg-primary text-primary-foreground"
-                        size="icon"
-                    >
-                        <Plus className="w-6 h-6" />
-                    </Button>
+                    <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-3 group animate-float">
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-background/80 backdrop-blur-md border border-border px-3 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase shadow-xl pointer-events-none">
+                            Quick Actions
+                        </span>
+                        <div className="relative">
+                            {/* Pulse Effect Rings */}
+                            <div className="absolute -inset-2 bg-primary/20 rounded-full animate-pulse blur-md" />
+                            <div className="absolute -inset-1 bg-primary/30 rounded-full animate-ping blur-sm opacity-20" />
+
+                            <Button
+                                className="h-16 w-16 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-10 hover:scale-110 active:scale-95 transition-all duration-300 bg-gradient-to-br from-primary via-primary to-indigo-600 text-primary-foreground border-none"
+                                size="icon"
+                            >
+                                <Plus className={`w-8 h-8 transition-transform duration-500 ${isMenuOpen ? 'rotate-45' : ''}`} />
+                            </Button>
+                        </div>
+                    </div>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>

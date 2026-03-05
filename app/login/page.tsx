@@ -42,9 +42,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-background">
+    <div className="min-h-screen w-full flex bg-background overflow-hidden">
       {/* Left Panel - Branding/Marketing (Hidden on mobile) */}
-      <div className="hidden lg:flex w-1/2 relative bg-zinc-950 overflow-hidden items-center justify-center p-12">
+      <div className="hidden lg:flex w-1/2 relative bg-zinc-950 overflow-hidden items-center justify-center p-12 animate-in fade-in slide-in-from-left-10 duration-1000 fill-mode-both">
         {/* Abstract Background Elements */}
         <div className="absolute inset-0 z-0">
           <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary/20 blur-[130px] rounded-full animate-float"></div>
@@ -81,7 +81,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel - Form container */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-12 relative">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-12 relative animate-in fade-in slide-in-from-bottom-10 lg:slide-in-from-right-10 duration-1000 fill-mode-both delay-150">
         {/* Mobile background elements */}
         <div className="absolute inset-0 z-0 lg:hidden overflow-hidden pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[100px] rounded-full"></div>

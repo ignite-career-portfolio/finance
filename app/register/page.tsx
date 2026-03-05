@@ -54,9 +54,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-background">
+    <div className="min-h-screen w-full flex bg-background overflow-hidden">
       {/* Right Panel - Branding/Marketing (Hidden on mobile) */}
-      <div className="hidden lg:flex w-[45%] relative bg-zinc-950 overflow-hidden items-center justify-center p-12 order-2">
+      <div className="hidden lg:flex w-[45%] relative bg-zinc-950 overflow-hidden items-center justify-center p-12 order-2 animate-in fade-in slide-in-from-right-10 duration-1000 fill-mode-both">
         {/* Abstract Background Elements */}
         <div className="absolute inset-0 z-0">
           <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-blue-500/20 blur-[130px] rounded-full animate-float"></div>
@@ -107,7 +107,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Left Panel - Form container */}
-      <div className="w-full lg:w-[55%] flex items-center justify-center p-4 sm:p-8 lg:p-12 relative order-1">
+      <div className="w-full lg:w-[55%] flex items-center justify-center p-4 sm:p-8 lg:p-12 relative order-1 animate-in fade-in slide-in-from-bottom-10 lg:slide-in-from-left-10 duration-1000 fill-mode-both delay-150">
         {/* Mobile background elements */}
         <div className="absolute inset-0 z-0 lg:hidden overflow-hidden pointer-events-none">
           <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[100px] rounded-full"></div>

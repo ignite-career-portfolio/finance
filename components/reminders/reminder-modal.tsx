@@ -77,7 +77,7 @@ export function ReminderModal({ isOpen, onClose, onSubmit, initialData }: Remind
       ...initialData,
       title,
       description,
-      dueDate: new Date(dueDate).toISOString(),
+      dueDate: new Date(dueDate.replace('T', ' ')).toISOString(),
       priority,
       isCompleted: initialData?.isCompleted ?? false,
       remindBeforeMinutes: parseInt(remindBefore),

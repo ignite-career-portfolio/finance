@@ -20,7 +20,7 @@ export async function sendReminderEmail(to: string, reminder: { title: string; d
         <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0;">${reminder.title}</h3>
           <p>${reminder.description || 'No description provided.'}</p>
-          <p><strong>Due Date:</strong> ${new Date(reminder.dueDate).toLocaleDateString()} at ${new Date(reminder.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+          <p><strong>Due Date:</strong> ${new Date(reminder.dueDate).toLocaleDateString()} at ${new Date(reminder.dueDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Tunis' })}</p>
         </div>
         <p style="color: #6b7280; font-size: 14px;">Stay on top of your finances! Check your dashboard for more details.</p>
       </div>

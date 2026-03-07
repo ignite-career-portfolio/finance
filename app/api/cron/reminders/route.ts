@@ -4,7 +4,21 @@ import { sendReminderEmail } from '@/lib/mail';
 
 export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const secretParam = searchParams.get('secret');
         const userId = request.headers.get('x-user-id');
+        const auth = request.headers.get('authorization');
+
+        // Protect the endpoint (allow dashboard users OR the secret via Param/Header)
+        const isAuthorized =
+            userId ||
+            secretParam === process.env.CRON_SECRET ||
+            auth === `Bearer ${process.env.CRON_SECRET}`;
+
+        if (!isAuthorized) {
+            return NextResponse.json({ success: false, error: 'Unauthorized CRON trigger' }, { status: 401 });
+        }
+
         const now = new Date();
 
         const remindersToNotify = await sql`

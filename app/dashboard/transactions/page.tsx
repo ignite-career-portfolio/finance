@@ -20,8 +20,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { apiClient } from '@/lib/api-client';
 import { toast } from 'sonner';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Bell } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { ReminderModal } from '@/components/reminders/reminder-modal';
 
 interface Transaction {
   id: string;
@@ -62,6 +65,7 @@ function TransactionForm({
   const [date, setDate] = useState(
     initial?.date ? new Date(initial.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
   );
+  const [createReminder, setCreateReminder] = useState(false);
 
   const currentCategories = categoryOptions[type];
 
@@ -71,7 +75,7 @@ function TransactionForm({
       toast.error('Please fill in all required fields');
       return;
     }
-    onSubmit({ type, description, amount, category, date });
+    onSubmit({ type, description, amount, category, date, createReminder });
   };
 
   return (
@@ -134,6 +138,19 @@ function TransactionForm({
         />
       </div>
 
+      {type === 'expense' && !initial?.id && (
+        <div className="flex items-center space-x-2 pt-2">
+          <Checkbox
+            id="createReminder"
+            checked={createReminder}
+            onCheckedChange={(v) => setCreateReminder(!!v)}
+          />
+          <Label htmlFor="createReminder" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            Create a reminder for this expense
+          </Label>
+        </div>
+      )}
+
       <div className="flex gap-2 justify-end pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
         <Button type="submit" disabled={isLoading}>
@@ -153,6 +170,8 @@ export default function TransactionsPage() {
   const [editTarget, setEditTarget] = useState<Transaction | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [reminderTarget, setReminderTarget] = useState<Transaction | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -184,11 +203,43 @@ export default function TransactionsPage() {
     });
 
     if (!response.error) {
+      if (formData.createReminder) {
+        // Create an automatic reminder for tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+
+        await apiClient.post('/api/reminders', {
+          title: `Reminder: ${formData.description}`,
+          description: `Automatic reminder for expense: ${formData.description} (${formData.category})`,
+          dueDate: tomorrow.toISOString(),
+          priority: 'medium',
+        });
+      }
+
       toast.success('Transaction added');
       setIsAddOpen(false);
       await fetchTransactions();
     } else {
       toast.error(response.error.message || 'Failed to add transaction');
+    }
+    setIsSaving(false);
+  };
+
+  const handleCreateReminder = async (formData: any) => {
+    setIsSaving(true);
+    const response = await apiClient.post('/api/reminders', {
+      title: formData.title,
+      description: formData.description,
+      dueDate: formData.dueDate,
+      priority: formData.priority,
+    });
+
+    if (!response.error) {
+      toast.success('Reminder added');
+      setReminderTarget(null);
+    } else {
+      toast.error(response.error.message || 'Failed to add reminder');
     }
     setIsSaving(false);
   };
@@ -318,6 +369,17 @@ export default function TransactionsPage() {
                   </p>
 
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {t.type === 'expense' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        onClick={() => setReminderTarget(t)}
+                        title="Add Reminder"
+                      >
+                        <Bell className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -381,6 +443,20 @@ export default function TransactionsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Reminder Dialog */}
+      {reminderTarget && (
+        <ReminderModal
+          isOpen={!!reminderTarget}
+          onClose={() => setReminderTarget(null)}
+          onSubmit={handleCreateReminder}
+          initialData={{
+            title: `Reminder: ${reminderTarget.description}`,
+            description: `Reminder for expense: ${reminderTarget.description}`,
+            priority: 'medium'
+          }}
+        />
+      )}
     </div>
   );
 }

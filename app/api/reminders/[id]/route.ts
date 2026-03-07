@@ -29,6 +29,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { title, description, priority } = body;
     const due_date = body.due_date ?? body.dueDate;
     const is_completed = body.is_completed ?? body.isCompleted;
+    const remind_before_minutes = body.remind_before_minutes ?? body.remindBeforeMinutes;
+    const is_recurring = body.is_recurring ?? body.isRecurring;
+    const recurrence_interval_hours = body.recurrence_interval_hours ?? body.recurrenceIntervalHours;
 
     const result = await sql`
       UPDATE reminders 
@@ -37,7 +40,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         description = COALESCE(${description}, description),
         due_date = COALESCE(${due_date}, due_date),
         is_completed = COALESCE(${is_completed}, is_completed),
-        priority = COALESCE(${priority}, priority)
+        priority = COALESCE(${priority}, priority),
+        remind_before_minutes = COALESCE(${remind_before_minutes}, remind_before_minutes),
+        is_recurring = COALESCE(${is_recurring}, is_recurring),
+        recurrence_interval_hours = COALESCE(${recurrence_interval_hours}, recurrence_interval_hours)
       WHERE id = ${id} AND user_id = ${userId}
       RETURNING *
     `;

@@ -3,7 +3,14 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/lib/user-context';
 import { Button } from '@/components/ui/button';
-import { Search, Bell, LogOut, Settings, User } from 'lucide-react';
+import { Search, Bell, LogOut, Settings, User, CheckCircle2, Circle, Clock, ListTodo } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useNotifications } from '@/lib/notification-context';
 
 const routeNames: Record<string, string> = {
   '/dashboard': 'Overview',
@@ -28,11 +36,78 @@ export function TopNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useUser();
+  const { totalPending, refreshCounts } = useNotifications();
 
   const handleLogout = () => {
     logout();
     router.push('/');
   };
+
+  const [reminders, setReminders] = useState<any[]>([]);
+  const [todos, setTodos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [remResponse, todoResponse] = await Promise.all([
+        apiClient.get<any[]>('/api/reminders'),
+        apiClient.get<any[]>('/api/todos')
+      ]);
+
+      if (remResponse.data) {
+        const raw = (remResponse.data as any).data ?? remResponse.data ?? [];
+        setReminders(raw.map((r: any) => ({
+          ...r,
+          dueDate: r.due_date ?? r.dueDate,
+          isCompleted: r.is_completed ?? r.isCompleted ?? false,
+        })));
+      }
+
+      if (todoResponse.data) {
+        const raw = (todoResponse.data as any).data ?? todoResponse.data ?? [];
+        setTodos(raw.map((t: any) => ({
+          ...t,
+          isCompleted: t.is_completed ?? t.isCompleted ?? false,
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setLoading(false);
+      refreshCounts();
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const toggleReminder = async (id: string, currentStatus: boolean) => {
+    const response = await apiClient.patch(`/api/reminders/${id}`, {
+      is_completed: !currentStatus,
+    });
+    if (!response.error) {
+      setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: !currentStatus } : r));
+      toast.success(currentStatus ? 'Reminder unmarked' : 'Reminder completed');
+      refreshCounts();
+    }
+  };
+
+  const toggleTodo = async (id: string, currentStatus: boolean) => {
+    const response = await apiClient.patch(`/api/todos/${id}`, {
+      is_completed: !currentStatus,
+    });
+    if (!response.error) {
+      setTodos(prev => prev.map(t => t.id === id ? { ...t, isCompleted: !currentStatus } : t));
+      toast.success(currentStatus ? 'Task active' : 'Task completed! 🚀');
+      refreshCounts();
+    }
+  };
+
+  const pendingReminders = reminders.filter(r => !r.isCompleted);
+  const pendingTodos = todos.filter(t => !t.isCompleted);
+  // Using global totalPending for the badge, but local counts for dropdown UI elements if needed
 
   const pageTitle = routeNames[pathname] || 'Dashboard';
 
@@ -70,10 +145,133 @@ export function TopNav() {
       <div className="flex items-center justify-end gap-3 flex-1">
 
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-secondary w-9 h-9">
-          <Bell className="w-4 h-4 text-muted-foreground" />
-          <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-primary ring-2 ring-background"></span>
-        </Button>
+        <DropdownMenu onOpenChange={(open) => open && fetchData()}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-secondary w-9 h-9 transition-all active:scale-95">
+              <Bell className={cn("w-4 h-4 text-muted-foreground", totalPending > 0 && "animate-none")} />
+              {totalPending > 0 && (
+                <span className="absolute -top-1 -right-0.5 flex items-center justify-center bg-primary text-[10px] font-black text-primary-foreground min-w-[18px] h-[18px] px-1 rounded-full ring-2 ring-background shadow-lg shadow-primary/20 animate-in zoom-in-50 duration-300">
+                  {totalPending > 99 ? '99+' : totalPending}
+                </span>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden rounded-2xl shadow-2xl border border-border/50 bg-background/95 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-border/50 bg-muted/30">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-bold text-sm">Notifications</h2>
+                {totalPending > 0 && (
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold h-5">
+                    {totalPending} PENDING
+                  </Badge>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">Manage your reminders and tasks</p>
+            </div>
+
+            <Tabs defaultValue="reminders" className="w-full">
+              <TabsList className="w-full justify-start rounded-none border-b border-border/50 bg-transparent h-10 p-0 px-2 gap-2">
+                <TabsTrigger value="reminders" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-10 px-3 text-xs font-bold transition-all">
+                  Reminders
+                </TabsTrigger>
+                <TabsTrigger value="todos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-10 px-3 text-xs font-bold transition-all">
+                  Tasks
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="reminders" className="m-0">
+                <ScrollArea className="h-[300px]">
+                  <div className="p-2 space-y-1">
+                    {reminders.length === 0 ? (
+                      <div className="py-10 text-center space-y-2">
+                        <Clock className="w-8 h-8 mx-auto text-muted-foreground/30" />
+                        <p className="text-xs text-muted-foreground">No reminders found</p>
+                      </div>
+                    ) : (
+                      reminders.sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted)).map(reminder => (
+                        <div
+                          key={reminder.id}
+                          className={cn(
+                            "flex items-start gap-3 p-2 rounded-lg transition-colors group cursor-pointer hover:bg-muted/50",
+                            reminder.isCompleted && "opacity-50"
+                          )}
+                          onClick={() => toggleReminder(reminder.id, reminder.isCompleted)}
+                        >
+                          <div className="mt-1">
+                            {reminder.isCompleted ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Circle className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            )}
+                          </div>
+                          <div className="space-y-1 flex-1">
+                            <p className={cn("text-xs font-medium leading-none", reminder.isCompleted && "line-through text-muted-foreground")}>
+                              {reminder.title}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              {new Date(reminder.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="todos" className="m-0">
+                <ScrollArea className="h-[300px]">
+                  <div className="p-2 space-y-1">
+                    {todos.length === 0 ? (
+                      <div className="py-10 text-center space-y-2">
+                        <ListTodo className="w-8 h-8 mx-auto text-muted-foreground/30" />
+                        <p className="text-xs text-muted-foreground">No tasks found</p>
+                      </div>
+                    ) : (
+                      todos.sort((a, b) => Number(a.isCompleted) - Number(b.isCompleted)).map(todo => (
+                        <div
+                          key={todo.id}
+                          className={cn(
+                            "flex items-start gap-3 p-2 rounded-lg transition-colors group cursor-pointer hover:bg-muted/50",
+                            todo.isCompleted && "opacity-50"
+                          )}
+                          onClick={() => toggleTodo(todo.id, todo.isCompleted)}
+                        >
+                          <div className="mt-1">
+                            {todo.isCompleted ? (
+                              <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <Circle className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            )}
+                          </div>
+                          <div className="space-y-1 flex-1">
+                            <p className={cn("text-xs font-medium leading-none", todo.isCompleted && "line-through text-muted-foreground")}>
+                              {todo.title}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              Added {new Date(todo.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+
+            <div className="p-2 border-t border-border/50 bg-muted/10">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-center text-[11px] font-bold text-muted-foreground hover:text-primary hover:bg-primary/5 h-8 gap-2"
+                onClick={() => router.push('/dashboard/reminders')}
+              >
+                View all activity
+              </Button>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* User Profile */}
         <DropdownMenu>

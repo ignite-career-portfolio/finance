@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
+import { useNotifications } from '@/lib/notification-context';
 
 interface Todo {
   id: string;
@@ -36,6 +37,7 @@ export default function TodosPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const { refreshCounts } = useNotifications();
 
   useEffect(() => {
     fetchTodos();
@@ -72,6 +74,7 @@ export default function TodosPage() {
       }, ...todos]);
       setNewTitle('');
       toast.success('Task added');
+      refreshCounts();
     } else {
       toast.error('Failed to add todo');
     }
@@ -95,6 +98,7 @@ export default function TodosPage() {
         duration: 2000,
         position: 'bottom-right'
       });
+      refreshCounts();
     }
   };
 
@@ -119,6 +123,7 @@ export default function TodosPage() {
     if (response.data) {
       setTodos(todos.filter((t) => t.id !== id));
       toast.success('Todo deleted');
+      refreshCounts();
     }
   };
 

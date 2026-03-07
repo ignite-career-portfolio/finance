@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
 import { toast } from 'sonner';
 import { ReminderModal } from '@/components/reminders/reminder-modal';
+import { useNotifications } from '@/lib/notification-context';
 
 interface Reminder {
   id: string;
@@ -21,6 +22,7 @@ export default function RemindersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
+  const { refreshCounts } = useNotifications();
 
   useEffect(() => {
     fetchReminders();
@@ -60,6 +62,7 @@ export default function RemindersPage() {
       setIsModalOpen(false);
       setSelectedReminder(null);
       fetchReminders();
+      refreshCounts();
     } else {
       toast.error(response.error?.message || 'Failed to save reminder');
     }
@@ -75,6 +78,7 @@ export default function RemindersPage() {
         reminders.map((r) => (r.id === id ? { ...r, isCompleted: !isCompleted } : r))
       );
       toast.success(isCompleted ? 'Reminder unmarked' : 'Reminder completed');
+      refreshCounts();
     }
   };
 
@@ -83,6 +87,7 @@ export default function RemindersPage() {
     if (response.data) {
       setReminders(reminders.filter((r) => r.id !== id));
       toast.success('Reminder deleted');
+      refreshCounts();
     }
   };
 
